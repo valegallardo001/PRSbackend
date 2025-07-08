@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model TraitCategory {
+  id     Int                    @id @default(autoincrement())
+  label  String
+  traits TraitToTraitCategory[]
+}
+
+model Trait {
+  id          Int                    @id @default(autoincrement())
+  label       String
+  description String?                @db.VarChar(3000)
+  URL         String?
+  efoId       String?                @unique
+  mondoId     String?                @unique
+  hpoId       String?                @unique
+  orphaId     String?                @unique
+  otherId     String?
+  prsModels   PRSModelToTrait[]
+  categories  TraitToTraitCategory[]
+}
+
+model TraitToTraitCategory {
+  traitId         Int
+  traitCategoryId Int
+  traitCategory   TraitCategory @relation(fields: [traitCategoryId], references: [id])
+  trait           Trait         @relation(fields: [traitId], references: [id])
+
+  @@id([traitId, traitCategoryId])
+  @@index([traitCategoryId], map: "TraitToTraitCategory_traitCategoryId_fkey")
+}
+
+model PRSModel {
+  id                           Int                           @id @default(autoincrement())
+  name                         String
+  numberOfSNP                  Int?
+  pgscId                       String?                       @unique
+  pgscURL                      String?                       @unique
+  publicationId                Int
+  broadAncestryCategories      BroadAncestryInModel[]
+  DevelopmentPopulationSamples DevelopmentPopulationSample[]
+  modelEvaluations             ModelEvaluation[]
+  publication                  Publication                   @relation(fields: [publicationId], references: [id])
+  traits                       PRSModelToTrait[]
+  prioritizedModels            PrioritizedModel[]
+  scoringFiles                 ScoringFile?
+
+  @@index([publicationId], map: "PRSModel_publicationId_fkey")
+}
+
+model PRSModelToTrait {
+  prsModelId Int
+  traitId    Int
+  prsModel   PRSModel @relation(fields: [prsModelId], references: [id])
+  trait      Trait    @relation(fields: [traitId], references: [id])
+
+  @@id([prsModelId, traitId])
+  @@index([traitId], map: "PRSModelToTrait_traitId_fkey")
+}
+
+model ScoringFile {
+  id         Int          @id @default(autoincrement())
+  assembly   AssemblyType
+  path       String
+  prsModelId Int          @unique
+  prsModel   PRSModel     @relation(fields: [prsModelId], references: [id])
+}
+
+model Publication {
+  id               Int               @id @default(autoincrement())
+  title            String            @db.VarChar(1000)
+  journal          String
+  author           String
+  date             DateTime?
+  year             Int
+  PMID             String?           @unique
+  DOI              String?           @unique
+  pgpId            String?           @unique
+  modelEvaluations ModelEvaluation[]
+  prsModels        PRSModel[]
+}
+
+model ModelEvaluation {
+  id                           Int                           @id @default(autoincrement())
+  reportedTrait                String
+  covariates                   String?                       @db.Text
+  ppmId                        String?
+  prsModelId                   Int
+  publicationId                Int
+  evaluationPopulationSampleId Int
+  evaluationPopulationSample   EvaluationPopulationSample    @relation(fields: [evaluationPopulationSampleId], references: [id])
+  prsModel                     PRSModel                      @relation(fields: [prsModelId], references: [id])
+  publication                  Publication                   @relation(fields: [publicationId], references: [id])
+  metricEvaluations            PerformanceMetricEvaluation[]
+
+  @@index([evaluationPopulationSampleId], map: "ModelEvaluation_evaluationPopulationSampleId_fkey")
+  @@index([prsModelId], map: "ModelEvaluation_prsModelId_fkey")
+  @@index([publicationId], map: "ModelEvaluation_publicationId_fkey")
+}
+
+model PerformanceMetricEvaluation {
+  id                  Int               @id @default(autoincrement())
+  estimate            Float
+  CILower             Float?
+  CIUpper             Float?
+  modelEvaluationId   Int
+  performanceMetricId Int
+  modelEvaluation     ModelEvaluation   @relation(fields: [modelEvaluationId], references: [id])
+  performanceMetric   PerformanceMetric @relation(fields: [performanceMetricId], references: [id])
+
+  @@index([modelEvaluationId], map: "PerformanceMetricEvaluation_modelEvaluationId_fkey")
+  @@index([performanceMetricId], map: "PerformanceMetricEvaluation_performanceMetricId_fkey")
+}
+
+model PerformanceMetric {
+  id                           Int                           @id @default(autoincrement())
+  nameShort                    String
+  nameLong                     String?
+  type                         PerformanceMetricType
+  performanceMetricEvaluations PerformanceMetricEvaluation[]
+}
+
+model EvaluationPopulationSample {
+  id                    Int                   @id @default(autoincrement())
+  numberOfIndividuals   Int
+  numberOfCases         Int?
+  numberOfControls      Int?
+  percentMale           Float?
+  age                   Float?
+  ageUnits              String?
+  ancestryBroad         String                @db.Text
+  ancestryDetails       String?               @db.Text
+  cohort                String                @db.Text
+  gcId                  String?
+  sourcePMID            String?
+  sourceDOI             String?
+  phenotypeFree         String?               @db.Text
+  pssId                 String                @unique
+  broadAncestryId       Int
+  broadAncestryCategory BroadAncestryCategory @relation(fields: [broadAncestryId], references: [id])
+  modelEvaluations      ModelEvaluation[]
+
+  @@index([broadAncestryId], map: "EvaluationPopulationSample_broadAncestryId_fkey")
+}
+
+model BroadAncestryCategory {
+  id                           Int                           @id @default(autoincrement())
+  symbol                       String
+  label                        String
+  broadAncestryInModels        BroadAncestryInModel[]
+  broadAncestryInRefPops       BroadAncestryInRefPop[]
+  DevelopmentPopulationSamples DevelopmentPopulationSample[]
+  EvaluationPopulationSamples  EvaluationPopulationSample[]
+}
+
+model BroadAncestryInModel {
+  percentage            Float
+  broadAncestryId       Int
+  prsModelId            Int
+  broadAncestryCategory BroadAncestryCategory @relation(fields: [broadAncestryId], references: [id])
+  prsModel              PRSModel              @relation(fields: [prsModelId], references: [id])
+
+  @@id([broadAncestryId, prsModelId])
+  @@index([prsModelId], map: "BroadAncestryInModel_prsModelId_fkey")
+}
+
+model DevelopmentPopulationSample {
+  id                    Int                   @id @default(autoincrement())
+  numberOfIndividuals   Int?
+  numberOfCases         Int?
+  numberOfControls      Int?
+  percentMale           Float?
+  age                   Float?
+  ageUnits              String?
+  ancestryBroad         String                @db.Text
+  ancestryDetails       String?               @db.Text
+  cohort                String                @db.Text
+  gcId                  String?
+  sourcePMID            String?
+  sourceDOI             String?
+  role                  DevelopmentRoleType
+  prsModelId            Int
+  broadAncestryId       Int
+  broadAncestryCategory BroadAncestryCategory @relation(fields: [broadAncestryId], references: [id])
+  prsModel              PRSModel              @relation(fields: [prsModelId], references: [id])
+
+  @@index([broadAncestryId], map: "DevelopmentPopulationSample_broadAncestryId_fkey")
+  @@index([prsModelId], map: "DevelopmentPopulationSample_prsModelId_fkey")
+}
+
+model BroadAncestryInRefPop {
+  percentage            Float
+  broadAncestryId       Int
+  referencePopulationId Int
+  broadAncestryCategory BroadAncestryCategory @relation(fields: [broadAncestryId], references: [id])
+  referencePopulation   ReferencePopulation   @relation(fields: [referencePopulationId], references: [id])
+
+  @@id([broadAncestryId, referencePopulationId])
+  @@index([referencePopulationId], map: "BroadAncestryInRefPop_referencePopulationId_fkey")
+}
+
+model ReferencePopulation {
+  id                      Int                     @id @default(autoincrement())
+  name                    String
+  description             String?
+  studyURL                String?
+  assembly                AssemblyType
+  numberOfindividuals     Int?
+  numberOfvariants        Int?
+  studyName               String
+  date                    DateTime
+  path                    String
+  broadAncestryCategories BroadAncestryInRefPop[]
+  prsAnalyses             PRSAnalysis[]
+}
+
+model PRSAnalysis {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  description           String?
+  userId                String?
+  date                  String
+  status                String
+  HTMLResultPath        String
+  ancestryThreshold     Int
+  overlapThreshold      Int
+  ancestryAdjustment    AncestryAdjustmentType
+  assembly              AssemblyType
+  patientId             Int
+  referencePopulationId Int
+  patient               Patient                @relation(fields: [patientId], references: [id])
+  referencePopulation   ReferencePopulation    @relation(fields: [referencePopulationId], references: [id])
+  prioritizedModels     PrioritizedModel[]
+
+  @@index([patientId], map: "PRSAnalysis_patientId_fkey")
+  @@index([referencePopulationId], map: "PRSAnalysis_referencePopulationId_fkey")
+}
+
+model PrioritizedModel {
+  position      Int
+  prsModelId    Int
+  prsAnalysisId Int
+  prsResultId   Int?
+  prsResult     PRSResult?
+  prsAnalysis   PRSAnalysis @relation(fields: [prsAnalysisId], references: [id])
+  prsModel      PRSModel    @relation(fields: [prsModelId], references: [id])
+
+  @@id([prsModelId, prsAnalysisId])
+  @@index([prsAnalysisId], map: "PrioritizedModel_prsAnalysisId_fkey")
+}
+
+model PRSResult {
+  id               Int              @id @default(autoincrement())
+  prs              Float
+  percentile       String
+  overlapPercent   Float
+  prsModelId       Int
+  prsAnalysisId    Int
+  prioritizedModel PrioritizedModel @relation(fields: [prsModelId, prsAnalysisId], references: [prsModelId, prsAnalysisId])
+
+  @@unique([prsModelId, prsAnalysisId])
+}
+
+model Patient {
+  id               Int           @id @default(autoincrement())
+  patientId        String
+  genotypingMethod String?
+  DataFilePath     String
+  DataFilteFormat  String
+  prsAnalyses      PRSAnalysis[]
+}
+
+enum AncestryAdjustmentType {
+  CONTINUOUS
+  DISCONTINUOUS
+}
+
+enum DevelopmentRoleType {
+  BASE
+  TUNING
+}
+
+enum PerformanceMetricType {
+  RISK_ASSOCIATION
+  DISCRIMINATING_POWER
+  OTHER
+}
+
+enum AssemblyType {
+  GRCh37
+  GRCh38
+}
