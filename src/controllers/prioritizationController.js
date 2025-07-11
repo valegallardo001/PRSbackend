@@ -190,6 +190,68 @@ async function prioritizePRSModels(req, res) {
     }
 }
 
+/* ─────────────────────────────────────────────
+   SUGERIR ANCESTRÍAS  (NUEVO ENDPOINT)
+───────────────────────────────────────────── */
+async function suggestAncestries(req, res) {
+    try {
+        const { selectedTraitIds } = req.body;
+
+        if (!selectedTraitIds || selectedTraitIds.length === 0) {
+            return res.status(400).json({ message: "No trait IDs provided." });
+        }
+
+        // 1. Buscar modelos que contengan CUALQUIERA de los traits enviados
+        const models = await prisma.pRSModel.findMany({
+            where: {
+                traits: {
+                    some: {
+                        trait: {
+                            OR: [
+                                { onto_id: { in: selectedTraitIds } },
+                                { efoId: { in: selectedTraitIds } },
+                                { mondoId: { in: selectedTraitIds } },
+                                { hpoId: { in: selectedTraitIds } },
+                                { orphaId: { in: selectedTraitIds } },
+                                { otherId: { in: selectedTraitIds } },
+                            ],
+                        },
+                    },
+                },
+            },
+            include: {
+                broadAncestryCategories: {
+                    include: { broadAncestryCategory: true },
+                },
+            },
+        });
+
+        // 2. Extraer y des-duplicar ancestrías
+        const ancestryMap = {};
+        models.forEach((m) => {
+            m.broadAncestryCategories.forEach((b) => {
+                const symbol = b.broadAncestryCategory?.symbol;
+                const label = b.broadAncestryCategory?.label;
+                if (symbol && label) ancestryMap[symbol] = label;
+            });
+        });
+
+        const suggestions = Object.entries(ancestryMap).map(([symbol, label]) => ({
+            symbol,
+            label,
+        }));
+
+        return res.json(suggestions);
+    } catch (error) {
+        console.error("❌ Error en suggestAncestries:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+/* ─────────────────────────────────────────────
+   EXPORTAR HANDLERS
+───────────────────────────────────────────── */
 module.exports = {
     prioritizePRSModels,
+    suggestAncestries, // 👈 exporta también el nuevo handler
 };
