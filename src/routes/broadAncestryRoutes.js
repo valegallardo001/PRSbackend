@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/broadAncestryController');
-
 /**
  * @swagger
  * /api/ancestries:
@@ -18,6 +17,8 @@ const controller = require('../controllers/broadAncestryController');
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/BroadAncestryCategory'
+ *       500:
+ *         description: Error interno al obtener las categorías
  */
 
 
@@ -25,3 +26,21 @@ const controller = require('../controllers/broadAncestryController');
 router.get('/', controller.getAllBroadAncestry);
 
 module.exports = router;
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     BroadAncestryCategory:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 1
+ *         label:
+ *           type: string
+ *           example: "European"
+ *         symbol:
+ *           type: string
+ *           example: "EUR"
+ */

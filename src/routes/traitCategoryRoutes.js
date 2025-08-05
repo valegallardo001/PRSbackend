@@ -22,3 +22,30 @@ const controller = require('../controllers/traitCategoryController');
  */
 router.get('/', controller.getTraitCategoriesWithPGSCount);
 module.exports = router;
+
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TraitCategory:
+ *       type: object
+ *       properties:
+ *         label:
+ *           type: string
+ *           example: "Cardiovascular"
+ *         traits:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *                 example: 101
+ *               label:
+ *                 type: string
+ *                 example: "Coronary artery disease"
+ *               modelCount:
+ *                 type: integer
+ *                 example: 5
+ */

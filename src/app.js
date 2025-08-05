@@ -11,7 +11,7 @@ const traitRoutes = require('./routes/traitRoutes');
 const ancestryTraitCategoryRoutes = require('./routes/ancestryTraitCategoryRoutes');
 const prioritizationRoutes = require("./routes/prioritizationRoutes");
 const traitCategoryGroupedRouter = require('./routes/traitCategoryGroupedRouter');
-
+const prioritizationResultsRouter = require('./routes/prioritizationResultsRouter');
 
 // Configuración de CORS según el entorno
 const corsOptions = {
@@ -45,5 +45,8 @@ app.use('/api/trait-categories/by-ancestry', ancestryTraitCategoryRoutes);
 app.use("/api", traitRoutes); 
 app.use("/api/prioritization", prioritizationRoutes);
 app.use('/api', traitCategoryGroupedRouter);
+
+
+app.use('/api/prioritization', prioritizationResultsRouter);
 
 module.exports = app;

@@ -22,6 +22,6 @@ const traitController = require('../controllers/traitController');
 
 
 router.get('/', traitController.getAllTraits);
-router.get("/traits/by-ids", traitController.getTraitsByIds); // 👈 nueva ruta
+router.post("/by-ids", traitController.getTraitsByIds); 
 
 module.exports = router;

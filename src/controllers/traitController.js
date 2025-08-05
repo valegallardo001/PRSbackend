@@ -33,22 +33,25 @@ exports.getAllTraits = async (req, res) => {
 
 exports.getTraitsByIds = async (req, res) => {
   try {
-    const { ids } = req.query;
-    if (!ids) return res.status(400).json({ error: "Parámetro 'ids' requerido" });
+    const { ids } = req.body; // ← CAMBIADO: antes era req.query
 
-    const idArray = ids.split(",").map((id) => parseInt(id, 10));
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "Se requiere un array de 'ids'" });
+    }
+
+    const idArray = ids.map((id) => parseInt(id, 10));
 
     const traits = await prisma.trait.findMany({
       where: {
         id: {
-          in: idArray
-        }
+          in: idArray,
+        },
       },
       include: {
         prsModels: {
-          select: { prsModelId: true }
-        }
-      }
+          select: { prsModelId: true },
+        },
+      },
     });
 
     const result = traits.map((trait) => ({
@@ -60,7 +63,7 @@ exports.getTraitsByIds = async (req, res) => {
       mondoId: trait.mondoId,
       hpoId: trait.hpoId,
       orphaId: trait.orphaId,
-      pgss: trait.prsModels.length
+      pgss: trait.prsModels.length,
     }));
 
     res.json(result);
@@ -69,3 +72,4 @@ exports.getTraitsByIds = async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
